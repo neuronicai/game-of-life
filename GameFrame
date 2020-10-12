@@ -1,0 +1,107 @@
+import numpy as np
+class GameFrame(object):
+    
+    def __init__(self, dim = (20,20), initArray = [0]):
+        self.dim = dim
+        if initArray != [0]:
+            self.initial_ = initArray
+        else:
+            self.initial_ = np.zeros(self.dim)
+        
+        self.array_ = self.initial_
+        
+    def turnOn(self, loc):
+        # Accepts lists of ordered pairs in "loc" and turns on cells at those locations.
+        self.initial_ = self.array_
+        if len(loc) == 1:
+            self.array_[loc] = 1
+        else:
+            for x in range(len(loc)):
+                self.array_[loc[x]] = 1
+                
+    def turnOff(self, loc):
+        self.initial_ = self.array_
+        if len(loc) == 1:
+            self.array_[loc] = 0
+        else:
+            for x in range(len(loc)):
+                self.array_[loc[x]] = 0
+                
+    def rollback(self):
+        # "Wait, no, I wanna go back."
+        self.array_ = self.initial_
+        
+    def show(self):
+        print(self.array_)
+    
+    def adjacentAlive(self, index, wrap):
+        arr = self.array_
+                
+    def evolve(self, iterations = 1, wrap = False, show_steps = False):
+        self.initial_ = self.array_
+        
+        for i in range(iterations):
+            # Performs the actual evolution rules.
+            
+            if iterations*self.initial_.size > 100000:
+                #Don't want huge loops!
+                print('Too many iterations for board size.')
+                break
+            
+            old_state = self.array_
+            
+            for index, x in np.ndenumerate(old_state):
+                adj_living = 0
+                print("Adjacent to", index)
+                #defining all adjacent indices to current index
+                test_adjacencies = [
+                    [index[0]-1,index[1]-1],
+                    [index[0]-1,index[1]],
+                    [index[0]-1,index[1]+1],
+                    [index[0],index[1]-1],
+                    [index[0],index[1]+1],
+                    [index[0]+1,index[1]-1],
+                    [index[0]+1,index[1]],
+                    [index[0]+1,index[1]+1]
+                              ]
+                true_adjacencies = []
+                life_check = []
+                
+                for n, p in enumerate(test_adjacencies): 
+                    # This loop determines the true adjacent cells and adds up the live adjacent cells.
+                    # Checks if the adjacencies are valid indices, and if Wrap = True, finds the true index.
+                    # This loop also finds adjacent live cells.
+                    nonnegative_row = p[0] >= 0 
+                    nonnegative_col = p[1] >= 0
+                    bounded_row = p[0] < old_state.shape[0]
+                    bounded_col = p[1] < old_state.shape[1]
+                    always_valid = nonnegative_row and nonnegative_col and bounded_row and bounded_col
+                    
+                    if always_valid:
+                        true_adjacencies.append(p)
+                        if old_state[p[0],p[1]] == 1:
+                            adj_living += 1
+                            life_check.append(p)
+                    
+                    if not always_valid and wrap:
+                        if not bounded_row:
+                            p[0] -= old_state.shape[0]
+                            true_adjacencies.append(p)
+                        if not bounded_col:
+                            p[1] -= old_state.shape[1]
+                            true_adjacencies.append(p)
+                        if old_state[p[0],p[1]] == 1:
+                            adj_living += 1
+                            
+                print(true_adjacencies)
+                print('Adjacent living =',life_check, adj_living)
+
+                if adj_living == 3:
+                    self.array_[index] = 1
+                elif adj_living == 2:
+                    self.array_[index] = old_state[index]
+                else:
+                    self.array_[index] = 0
+                    
+            if show_steps:
+                self.show()
