@@ -1,18 +1,26 @@
 import numpy as np
+
 class GameFrame(object):
-    
     def __init__(self, dim = (20,20), initArray = [0]):
         self.dim = dim
         if initArray != [0]:
-            self.initial_ = initArray
+            self.array_ = initArray
         else:
-            self.initial_ = np.zeros(self.dim)
+            self.array_ = np.zeros(self.dim)
         
-        self.array_ = self.initial_.copy()
-        
-    def turnOn(self, loc):
-        # Accepts lists of ordered pairs in "loc" and turns on cells at those locations.
+    def save(self):
+        # Method for saving a state into self.initial_ before mutating. Allows "rollback" method.
         self.initial_ = self.array_.copy()
+        
+    def randomState(self, probability, seed = None):
+        # Creates a frame where each space has user-specified probability of being activated.
+        self.save()
+        np.random.seed(seed)
+        self.array_ = np.where(np.random.rand(self.dim[0],self.dim[1]) < probability, 0, 1)
+    
+    def turnOn(self, loc):
+        # Accepts list of tuples in "loc" and turns on cells at location in each tuple.
+        self.save()
         if len(loc) == 1:
             self.array_[loc] = 1
         else:
@@ -20,7 +28,8 @@ class GameFrame(object):
                 self.array_[loc[x]] = 1
                 
     def turnOff(self, loc):
-        self.initial_ = self.array_.copy()
+        # Same as turnOn method, but the opposite.
+        self.save()
         if len(loc) == 1:
             self.array_[loc] = 0
         else:
@@ -34,14 +43,15 @@ class GameFrame(object):
     def show(self):
         print(self.array_)
                 
-    def evolve(self, iterations = 1, wrap = False, show_steps = False):
-        self.initial_ = self.array_.copy()
+    def evolve(self, iterations = 1, wrap = False, show = False):
+        # Main method for evolving the GameFrame according to the rules of Conway's Game of Life.
+        self.save()
         
         for i in range(iterations):
             # Performs the actual evolution rules.
             
             if iterations*self.initial_.size > 100000:
-                #Don't want huge loops!
+                # Don't want huge loops!
                 print('Too many iterations for board size.')
                 break
             
@@ -52,19 +62,7 @@ class GameFrame(object):
                 print("Adjacent to", index)
                 '''
                 
-                #defining all adjacent indices to current index
-                test_adjacencies = [
-                    [index[0]-1,index[1]-1],
-                    [index[0]-1,index[1]],
-                    [index[0]-1,index[1]+1],
-                    [index[0],index[1]-1],
-                    [index[0],index[1]+1],
-                    [index[0]+1,index[1]-1],
-                    [index[0]+1,index[1]],
-                    [index[0]+1,index[1]+1]
-                              ]
-                
-                adj_living, true_adjacencies, life_check = checkAdjacent(test_adjacencies, old_state, wrap)
+                adj_living, true_adjacencies, life_check = checkAdjacent(index, old_state, wrap)
                 
                 ''' For troubleshooting
                 print('Adjacent cells: ', true_adjacencies)
@@ -83,13 +81,27 @@ class GameFrame(object):
                 print("\n")
                 '''
                 
-            if show_steps:
+            if show:
+                print('Iteration ', i+1)
                 self.show()
                 
-def checkAdjacent(test_adjacencies_, state, wrap_):
+def checkAdjacent(index_, state, wrap_):
+    
+    #defining all adjacent indices to current index
+    test_adjacencies_ = [
+        [index_[0]-1,index_[1]-1],
+        [index_[0]-1,index_[1]],
+        [index_[0]-1,index_[1]+1],
+        [index_[0],index_[1]-1],
+        [index_[0],index_[1]+1],
+        [index_[0]+1,index_[1]-1],
+        [index_[0]+1,index_[1]],
+        [index_[0]+1,index_[1]+1]
+                ]
     adj_living_ = 0
     true_adjacencies_ = []
     life_check_ = []
+    
     for n, p in enumerate(test_adjacencies_): 
         # This loop determines the true adjacent cells and adds up the live adjacent cells.
         # Checks if the adjacencies are valid indices, and if Wrap = True, finds the true index.
@@ -117,4 +129,3 @@ def checkAdjacent(test_adjacencies_, state, wrap_):
                     adj_living_ += 1
                         
     return adj_living_, true_adjacencies_, life_check_
-                            
